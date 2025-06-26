@@ -1,5 +1,5 @@
 const descriptions = {
-    welcome_image: "https://motionbgs.com/media/5180/mikasa-aot.960x540.mp4",
+    welcome_image: "https://jpcdn.it/img/small/a6a99e201d52631e166d75820020ca72.jpg",
     welcome_text: `This is *Klein Moretti* Explore the mysteries files and uncover hidden knowledge about *Lord Of The Mysteries World*`,
 
     home: `This is *Klein Moretti* Explore the mysteries files and uncover hidden knowledge about *Lord Of The Mysteries World*`,
