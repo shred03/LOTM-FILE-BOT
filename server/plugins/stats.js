@@ -12,7 +12,7 @@ module.exports = function setupStats(bot, logger) {
 
     const isAdmin = async (ctx, next) => {
         if (!ADMIN_IDS.includes(ctx.from.id)) {
-            return ctx.reply('❌ 𝙊𝙣𝙡𝙮 𝙖𝙙𝙢𝙞𝙣𝙨 𝙘𝙖𝙣 𝙪𝙨𝙚 𝙩𝙝𝙞𝙨 𝙘𝙤𝙢𝙢𝙖𝙣𝙙');
+            return ctx.reply('Admin Command ❌');
         }
         return next();
     };

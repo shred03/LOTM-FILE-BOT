@@ -1,7 +1,6 @@
 module.exports = {    
     FORCE_CHANNELS: [
-      { id: '-1002205905018', username: 'PirecyKings3', name: '𝗣𝗶𝗿𝗲𝗰𝘆 𝗞𝗶𝗻𝗴𝘀 𝟯.𝟬 👑' },
-      { id: '-1002301716866', username: 'pirecykingcollectionandfranchise', name: '[PK 👑] Collection/franchise'},
+      { id: '-1002728630709', username: 'lord_of_the_mysteries_channel', name: '𝖫𝗈𝗋𝖽 𝗈𝖿 𝗍𝗁𝖾 𝖬𝗒𝗌𝗍𝖾𝗋𝗂𝖾𝗌' }
      
     ],
 }

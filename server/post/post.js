@@ -7,7 +7,7 @@ const { TMDB_API_KEY, TMDB_BASE_URL} = require('../config')
 const setupPostCommand = (bot, logger, ADMIN_IDS) => {
     const isAdmin = async (ctx, next) => {
         if (!ADMIN_IDS.includes(ctx.from.id)) {
-            return ctx.reply('❌ 𝙊𝙣𝙡𝙮 𝙖𝙙𝙢𝙞𝙣𝙨 𝙘𝙖𝙣 𝙪𝙨𝙚 𝙩𝙝𝙞𝙨 𝙘𝙤𝙢𝙢𝙖𝙣𝙙');
+            return ctx.reply('Admin Command ❌');
         }
         return next();
     };
@@ -240,7 +240,7 @@ const setupPostCommand = (bot, logger, ADMIN_IDS) => {
         }
     });
 
-    bot.command(['post'], isAdmin, async (ctx) => {
+    bot.command(['mp'], isAdmin, async (ctx) => {
         try {
             setTimeout(async () => {
                 await ctx.deleteMessage()

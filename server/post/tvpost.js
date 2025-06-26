@@ -10,7 +10,7 @@ const TMDB_API_KEY = config.TMDB_API_KEY;
 const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
     const isAdmin = async (ctx, next) => {
         if (!ADMIN_IDS.includes(ctx.from.id)) {
-            return ctx.reply('❌ 𝙊𝙣𝙡𝙮 𝙖𝙙𝙢𝙞𝙣𝙨 𝙘𝙖𝙣 𝙪𝙨𝙚 𝙩𝙝𝙞𝙨 𝙘𝙤𝙢𝙢𝙖𝙣𝙙');
+            return ctx.reply('Admin Command ❌');
         }
         return next();
     };
@@ -137,13 +137,13 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
         return buttons;
     };
 
-    bot.command(['tvpost'], isAdmin, async (ctx) => {
+    bot.command(['sp'], isAdmin, async (ctx) => {
         try {
             setTimeout(async () => {
                 await ctx.deleteMessage()
             }, 5000);
 
-            const commandText = ctx.message.text.substring(8).trim(); // Remove /tvpost and trim
+            const commandText = ctx.message.text.substring(8).trim(); 
             
             if (!commandText.includes('|')) {
                 await logger.command(
