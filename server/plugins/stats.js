@@ -58,26 +58,17 @@ module.exports = function setupStats(bot, logger) {
                 return `${days}d ${hours}h ${minutes}m ${seconds}s`;
             };
 
-            const statsMessage = `📊 *Bot Statistics Report*\n
-\`\`\`
-👥 User Statistics:
+            const statsMessage = `*Bot Statistics Report*\n
+_👥 User Stats:_
 • Total Users: ${totalUsers}
 • New Users Today: ${newUsersToday}
-• Total Admins: ${ADMIN_COUNT}
 
-📁 File Statistics:
-• Total Files Stored: ${totalFiles}
-• Files Added Today: ${filesToday}
-
-⚙️ System Information:
+_⚙️ System Info:_
 • Uptime: ${formatUptime(process.uptime())}
 • Platform: ${os.platform()} ${os.release()}
-• Load Average: ${os.loadavg().join(' | ')}
 
-💾 Memory Usage: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB
+_Memory Usage:_ ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB
 
-🕒 Generated at: ${formatISTTime(new Date())}
-\`\`\`
 `;
 
 
