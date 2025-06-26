@@ -524,8 +524,7 @@ bot.command('start', async (ctx) => {
                     await fileRetrievalLimitSystem.handleVerificationSuccess(result.userId, 'limit_exceeded');
                     
                     await ctx.reply(`✅ **Verification Successful!**\n\n` +
-                        `Your file retrieval limit has been reset. You can now access files again.\n\n` +
-                        `${result.uniqueId ? `Use this link to get your files: /start ${result.uniqueId}` : 'You can now access files normally.'}`,
+                        `Limit have been reset. You can access files.\n\n` +
                         { parse_mode: 'Markdown' }
                     );                    
                    
@@ -538,9 +537,9 @@ bot.command('start', async (ctx) => {
                     // UPDATED: Pass the context to handleVerificationSuccess  
                     await fileRetrievalLimitSystem.handleVerificationSuccess(result.userId, 'general');
                     
-                    await ctx.reply(`✅ **Verification Successful!**\n\n` +
+                    await ctx.reply(`**Verification Successful!** ✅\n\n` +
                         `${result.message}\n\n` +
-                        `You can now access files by using the original file link.`,
+                        `Now you can access the files.`,
                         { parse_mode: 'Markdown' }
                     );
                 }
@@ -573,7 +572,7 @@ bot.command('start', async (ctx) => {
                         channelButtons.map(button => [button])
                     );
 
-                    await ctx.reply('😊 To access the files, please join of our channels:', joinKeyboard);
+                    await ctx.reply('Join of our channels:', joinKeyboard);
                     return;
                 }
                
@@ -619,10 +618,10 @@ bot.command('start', async (ctx) => {
                 }
             }
             await ctx.telegram.deleteMessage(ctx.chat.id, sendingMsg.message_id);
-            const completionMsg = await ctx.reply('✅ All files sent!');
+            const completionMsg = await ctx.reply('Files sent! ✅');
             sentMessages.push(completionMsg.message_id);
             if (AUTO_DELETE) {
-                const warningMsg = await ctx.reply(`⚠️ Warning! These files will be automatically deleted in ${DELETE_MINUTES} minutes. Forward them now to keep copies!`);
+                const warningMsg = await ctx.reply(`Forward the files otherwise it will be automatically deleted in ${DELETE_MINUTES} minutes`);
                 sentMessages.push(warningMsg.message_id);
             }
             
@@ -630,7 +629,7 @@ bot.command('start', async (ctx) => {
                 await fileRetrievalLimitSystem.updateFileRetrievalCount(ctx.from.id, files.length);
                 const userStats = await fileRetrievalLimitSystem.getUserStats(ctx.from.id);
                 if (userStats && userStats.remainingFiles > 0) {
-                    await ctx.reply(`📊 You have ${userStats.remainingFiles} file retrievals remaining in this cycle.`);
+                    await ctx.reply(`Only ${userStats.remainingFiles} are remaining`);
                 }
             }
             if (AUTO_DELETE) {
@@ -640,7 +639,7 @@ bot.command('start', async (ctx) => {
                             await ctx.telegram.deleteMessage(ctx.chat.id, msgId);
                         }
 
-                        const fileDeleteWarningMsg = '<blockquote>🗑️ Files have been automatically deleted.</blockquote>';
+                        const fileDeleteWarningMsg = '<i>Files have been deleted.</i>';
                         await ctx.reply(fileDeleteWarningMsg, { parse_mode: 'HTML' });
                     } catch (error) {
                         console.error('Auto-delete error:');
@@ -679,10 +678,10 @@ bot.action(/^check_join_(.+)/, async (ctx) => {
     try {
         const isMember = await checkChannelMembership(ctx, ctx.from.id);
         if (!isMember) {
-            await ctx.answerCbQuery('😒 You haven\'t joined the channels yet!');
+            await ctx.answerCbQuery('You haven\'t joined the channels yet!');
         } else {
             await ctx.deleteMessage();
-            await ctx.reply(`😍 Thank you for joining! Now send below message to retrieve your files...`);
+            await ctx.reply(`Thank you for joining!`);
             
             await ctx.telegram.sendMessage(ctx.chat.id, `/start ${uniqueId}`);
         }
@@ -698,11 +697,11 @@ bot.action(/^verify_check_(.+)/, async (ctx) => {
         const isVerified = await verificationSystem.isUserVerified(ctx.from.id);
         
         if (!isVerified) {
-            await ctx.answerCbQuery('❌ Please complete verification first by clicking the verification link.');
+            await ctx.answerCbQuery('Complete the verification by clicking the on link.');
             return;
         }
 
-        await ctx.answerCbQuery('✅ Verification confirmed!');
+        await ctx.answerCbQuery('Verified ✅');
         await ctx.deleteMessage();
         
         await ctx.telegram.sendMessage(ctx.chat.id, `/start ${uniqueId}`);
