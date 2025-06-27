@@ -4,7 +4,7 @@ const crypto = require("crypto")
 
 const shrinkme = async (originalUrl) => {
     const randomString = crypto.randomBytes(5).toString('hex');
-    const aliasMsg = `${randomString}lord_of_the_mysteries_channel`;
+    const aliasMsg = `lotm${randomString}`;
     try {
         const respose = await axios.get("https://pocolinks.com/api", {
             params:{
