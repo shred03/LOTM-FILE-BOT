@@ -524,7 +524,7 @@ bot.command('start', async (ctx) => {
                     await fileRetrievalLimitSystem.handleVerificationSuccess(result.userId, 'limit_exceeded');
                     
                     await ctx.reply(`✅ **Verification Successful!**\n\n` +
-                        `Limit have been reset. You can access files.\n\n` +
+                        `Limit have been reset. You can access files.\n\n`,
                         { parse_mode: 'Markdown' }
                     );                    
                    
