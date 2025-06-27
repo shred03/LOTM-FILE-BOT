@@ -4,9 +4,9 @@ const crypto = require("crypto")
 
 const shrinkme = async (originalUrl) => {
     const randomString = crypto.randomBytes(5).toString('hex');
-    const aliasMsg = `pirecykings${randomString}`;
+    const aliasMsg = `${randomString}lord_of_the_mysteries_channel`;
     try {
-        const respose = await axios.get("https://shrinkme.io/api", {
+        const respose = await axios.get("https://pocolinks.com/api", {
             params:{
                 api: config.SHRINKME_API,
                 url: originalUrl,
