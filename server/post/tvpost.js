@@ -78,17 +78,16 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
         
         const caption = `<b>${seriesData.name} (${firstAirYear})</b>
 ╭──────────────────────
-» 𝗔𝘂𝗱𝗶𝗼: Hindi-English (E-subs)
-» 𝗤𝘂𝗮𝗹𝗶𝘁𝘆: 480p | 720p | 1080p 
-» 𝗥𝘂𝗻𝘁𝗶𝗺𝗲: ${formattedRuntime}
-» 𝗦𝗲𝗮𝘀𝗼𝗻𝘀: ${numberOfSeasons}
-» 𝗘𝗽𝗶𝘀𝗼𝗱𝗲𝘀: ${episodeCounts}
+➺ 𝑨𝒖𝒅𝒊𝒐: Japanese-English (E-subs)
+➺ 𝑸𝒖𝒂𝒍𝒊𝒕𝒚: 480p | 720p | 1080p 
+➺ 𝑫𝒖𝒓𝒂𝒕𝒊𝒐𝒏: ${formattedRuntime}
+➺ 𝑺𝒆𝒂𝒔𝒐𝒏: ${numberOfSeasons}
+➺ 𝑬𝒑𝒊𝒔𝒐𝒅𝒆: ${episodeCounts}
 ├──────────────────────
-» 𝗚𝗲𝗻𝗿𝗲𝘀: ${genres}
+➺ 𝑮𝒆𝒏𝒓𝒆𝒔: ${genres}
 ╰──────────────────────
     
-<b>@Teamxpirates</b>
-<blockquote>[𝗜𝗳 𝗬𝗼𝘂 𝗦𝗵𝗮𝗿𝗲 𝗢𝘂𝗿 𝗙𝗶𝗹𝗲𝘀 𝗪𝗶𝘁𝗵𝗼𝘂𝘁 𝗖𝗿𝗲𝗱𝗶𝘁, 𝗧𝗵𝗲𝗻 𝗬𝗼𝘂 𝗪𝗶𝗹𝗹 𝗯𝗲 𝗕𝗮𝗻𝗻𝗲𝗱]</blockquote>`;
+<b>𝑷𝒐𝒘𝒆𝒓𝒆𝒅 𝑩𝒚: @lord_of_the_mysteries_channel</b>`;
 
         const buttons = seasonLinks.map(seasonLink => {
             const [buttonText, link] = seasonLink.trim().split('=').map(item => item.trim());
