@@ -198,7 +198,7 @@ bot.command(['link', 'sl'], isAdmin, async (ctx) => {
 
         if (stored) {
             const retrievalLink = `https://t.me/${ctx.botInfo.username}?start=${uniqueId}`;
-            const universelUrl = `https://${config.REDIRECT_DOMAIN}/pirecykings/${uniqueId}`
+            const universelUrl = `https://${config.REDIRECT_DOMAIN}/${uniqueId}`
             const initialMessage = await ctx.reply(`✅ File stored successfully!\nUniversel URL: <code>${universelUrl}</code> \n\n🔗 Original URL: <code>${retrievalLink}</code>\n⌛ Generating short URL...`, { parse_mode: 'HTML' });
             shrinkme(universelUrl).then(shortUrl => {
                 ctx.telegram.editMessageText(
@@ -309,7 +309,7 @@ bot.command(['batch', 'ml'], isAdmin, async (ctx) => {
             await File.insertMany(files);
 
             const retrievalLink = `https://t.me/${ctx.botInfo.username}?start=${uniqueId}`;
-            const universelUrl = `https://${config.REDIRECT_DOMAIN}/pirecykings/${uniqueId}`
+            const universelUrl = `https://${config.REDIRECT_DOMAIN}/${uniqueId}`
 
             const initialMessage = await ctx.reply(`✅ File stored successfully!\nUniversel URL: <code>${universelUrl}</code>\n\n🔗 Original URL: <code>${retrievalLink}</code>\n⌛ Generating short URL...`, { parse_mode: 'HTML' });
             shrinkme(universelUrl).then(shortUrl => {
