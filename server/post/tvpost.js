@@ -90,7 +90,7 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
 <blockquote><b>𝑷𝒐𝒘𝒆𝒓𝒆𝒅 𝑩𝒚<i>: @lord_of_the_mysteries_channel</i></b></blockquote>`;
 
         const buttons = seasonLinks.map((seasonLink, index) => {
-            const [buttonText, link] = seasonLink.trim().split('>').map(item => item.trim());
+            const [buttonText, link] = seasonLink.trim().split('=').map(item => item.trim());
             
             if (!link || link === '' || link === 'placeholder') {
                 return Markup.button.callback(
