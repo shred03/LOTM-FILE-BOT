@@ -3,6 +3,7 @@ const { Markup } = require('telegraf');
 const Logger = require('../logs/Logs');
 const Post = require('../models/Post');
 const config = require('../config');
+const TVPost = require('../models/POSTID');
 
 const TMDB_BASE_URL = config.TMDB_BASE_URL;
 const TMDB_API_KEY = config.TMDB_API_KEY;
@@ -78,13 +79,14 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
 
         const caption = `<b>${seriesData.name} (${firstAirYear})</b>
 ╭──────────────────────
-➺ 𝑨𝒖𝒅𝒊𝒐: Japanese-English (E-subs)
-➺ 𝑸𝒖𝒂𝒍𝒊𝒕𝒚: 480p | 720p | 1080p 
-➺ 𝑫𝒖𝒓𝒂𝒕𝒊𝒐𝒏: ${formattedRuntime}
-➺ 𝑺𝒆𝒂𝒔𝒐𝒏: ${numberOfSeasons}
-➺ 𝑬𝒑𝒊𝒔𝒐𝒅𝒆: ${episodeCounts}
+➺𝑨𝒖𝒅𝒊𝒐: Jap-Eng (ESub)
+➺𝑸𝒖𝒂𝒍𝒊𝒕𝒚: 480p-720p-1080p
 ├──────────────────────
-➺ 𝑮𝒆𝒏𝒓𝒆𝒔: ${genres}
+➺𝑫𝒖𝒓𝒂𝒕𝒊𝒐𝒏: ${formattedRuntime}
+➺𝑺𝒆𝒂𝒔𝒐𝒏: ${numberOfSeasons}
+├──────────────────────
+➺𝑬𝒑𝒊𝒔𝒐𝒅𝒆: ${episodeCounts}
+➺𝑮𝒆𝒏𝒓𝒆𝒔: ${genres}
 ╰──────────────────────
     
 <blockquote><b>𝑷𝒐𝒘𝒆𝒓𝒆𝒅 𝑩𝒚<i>: @lord_of_the_mysteries_channel</i></b></blockquote>`;
@@ -163,7 +165,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 return ctx.reply('Please use the format: /tvpost Series_Name | Season 1 = link1 | Season 2 = link2 | ...\n\n*Note: You can use "placeholder" as link value to add links later dynamically*');
             }
 
-            // Parse command parts
             const parts = commandText.split('|').map(part => part.trim());
             const seriesName = parts[0];
             const seasonLinks = parts.slice(1);
@@ -179,14 +180,12 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 return ctx.reply('Please provide at least one season link in the format: Season X = link\n*You can use "placeholder" as link value to add links later*');
             }
 
-            // Validate season links format
             for (const seasonLink of seasonLinks) {
                 if (!seasonLink.includes('=')) {
                     return ctx.reply(`Invalid format for '${seasonLink}'. Please use 'Season X = link' format.`);
                 }
             }
 
-            // Check if channel is set
             const postSetting = await Post.getLatestForAdmin(ctx.from.id);
 
             if (!postSetting) {
@@ -200,7 +199,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 return ctx.reply('❌ No channel set. Please use /setchannel command first.');
             }
 
-            // Search for TV series
             const processingMsg = await ctx.reply('⌛ Searching for TV series...');
             const searchResults = await searchTVSeries(seriesName);
 
@@ -216,7 +214,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 return ctx.reply(`❌ No TV series found for: "${seriesName}"`);
             }
 
-            // Cache search results for pagination
             bot.context.tvSearchCache = bot.context.tvSearchCache || {};
             const queryId = `tvq${ctx.from.id}_${Date.now()}`;
 
@@ -228,7 +225,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 results: searchResults
             };
 
-            // Create series selection buttons
             const seriesButtons = searchResults.results.map(series => {
                 const year = series.first_air_date ? new Date(series.first_air_date).getFullYear() : 'N/A';
                 return [Markup.button.callback(
@@ -237,7 +233,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 )];
             });
 
-            // Add pagination if needed
             if (searchResults.total_pages > 1) {
                 seriesButtons.push(
                     createPaginationKeyboard(queryId, 1, searchResults.total_pages)
@@ -272,255 +267,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
         }
     });
 
-    // Handle pagination for search results
-    bot.action(/^tvpage_(.+)_(\d+)$/, async (ctx) => {
-        try {
-            const queryId = ctx.match[1];
-            const page = parseInt(ctx.match[2]);
-
-            if (!bot.context.tvSearchCache || !bot.context.tvSearchCache[queryId]) {
-                return ctx.answerCbQuery('Session expired. Please search again.');
-            }
-
-            const cachedSearch = bot.context.tvSearchCache[queryId];
-            const searchResults = await searchTVSeries(cachedSearch.query, page);
-
-            if (!searchResults || !searchResults.results || searchResults.results.length === 0) {
-                await ctx.answerCbQuery('No results found on this page');
-                return;
-            }
-
-            // Update cached data
-            cachedSearch.currentPage = page;
-            cachedSearch.results = searchResults;
-
-            // Create updated buttons
-            const seriesButtons = searchResults.results.map(series => {
-                const year = series.first_air_date ? new Date(series.first_air_date).getFullYear() : 'N/A';
-                return [Markup.button.callback(
-                    `${series.name} (${year})`,
-                    `tvseries_${series.id}_${queryId}`
-                )];
-            });
-
-            seriesButtons.push(
-                createPaginationKeyboard(queryId, page, searchResults.total_pages)
-            );
-
-            await ctx.editMessageText(
-                `📺 Found ${searchResults.total_results} results for "${cachedSearch.query}" (Page ${page}/${searchResults.total_pages})\n\nPlease select a TV series:`,
-                Markup.inlineKeyboard(seriesButtons)
-            );
-
-            await ctx.answerCbQuery();
-        } catch (error) {
-            console.error('Error handling TV pagination:', error);
-            await ctx.answerCbQuery('Error loading page');
-        }
-    });
-
-    // Handle TV series selection
-    bot.action(/^tvseries_(\d+)_(.+)$/, async (ctx) => {
-        try {
-            const seriesId = ctx.match[1];
-            const queryId = ctx.match[2];
-
-            if (!bot.context.tvSearchCache || !bot.context.tvSearchCache[queryId]) {
-                return ctx.answerCbQuery('Session expired. Please search again.');
-            }
-
-            const cachedSearch = bot.context.tvSearchCache[queryId];
-            const seasonLinks = cachedSearch.seasonLinks;
-
-            await ctx.answerCbQuery('Loading TV series details...');
-            await ctx.editMessageText('⌛ Fetching TV series details...');
-
-            // Get detailed series information
-            const seriesData = await getTVSeriesDetails(seriesId);
-
-            if (!seriesData) {
-                return ctx.editMessageText('❌ Error fetching TV series details. Please try again.');
-            }
-
-            // Generate unique post ID for this post
-            const postId = `tvp${ctx.from.id}_${Date.now()}`;
-            const post = createTVSeriesPost(seriesData, seasonLinks, postId);
-            const imageUrl = getTVSeriesImageUrl(seriesData);
-            const postSetting = await Post.getLatestForAdmin(ctx.from.id);
-
-            const channelInfo = postSetting.channelUsername ?
-                `@${postSetting.channelUsername}` :
-                postSetting.channelId;
-
-            // Create confirmation buttons
-            const confirmationButtons = Markup.inlineKeyboard([
-                [
-                    Markup.button.callback('✅ Post to Channel', `tvconfirm_${postId}`),
-                    Markup.button.callback('❌ Cancel', `tvcancel_${postId}`)
-                ]
-            ]);
-
-            // Store post data for confirmation and dynamic linking
-            bot.context.tvPostData = bot.context.tvPostData || {};
-            bot.context.tvPostData[postId] = {
-                seriesData,
-                seasonLinks,
-                imageUrl,
-                post,
-                channelId: postSetting.channelId,
-                channelInfo,
-                postId
-            };
-
-            // Send preview
-            if (imageUrl) {
-                await ctx.telegram.sendPhoto(ctx.chat.id, imageUrl, {
-                    caption: `<b>Preview:</b>\n\n${post.caption}\n\n<i>Ready to post to ${channelInfo}</i>`,
-                    parse_mode: 'HTML',
-                    ...post.keyboard
-                });
-            } else {
-                await ctx.telegram.sendMessage(ctx.chat.id, `<b>Preview:</b>\n\n${post.caption}\n\n<i>Ready to post to ${channelInfo}</i>`, {
-                    parse_mode: 'HTML',
-                    ...post.keyboard
-                });
-            }
-
-            await ctx.telegram.sendMessage(ctx.chat.id, 'Would you like to post this to your channel?', confirmationButtons);
-
-            // Clean up search cache
-            if (bot.context.tvSearchCache && bot.context.tvSearchCache[queryId]) {
-                delete bot.context.tvSearchCache[queryId];
-            }
-
-            await logger.command(
-                ctx.from.id,
-                `${ctx.from.first_name} (${ctx.from.username || 'Untitled'})` || 'Unknown',
-                'TV Series selected',
-                'SUCCESS',
-                `Created post preview for TV series: ${seriesData.name}`
-            );
-
-        } catch (error) {
-            console.error('Error selecting TV series:', error);
-            await ctx.answerCbQuery('Error loading TV series');
-            await ctx.editMessageText('Error creating TV series post. Please try again.');
-
-            await logger.error(
-                ctx.from.id,
-                `${ctx.from.first_name} (${ctx.from.username || 'Untitled'})` || 'Unknown',
-                'TV Series selection',
-                'FAILED',
-                error.message
-            );
-        }
-    });
-
-    // Handle post confirmation and sending to channel
-    bot.action(/^tvconfirm_(.+)$/, async (ctx) => {
-        try {
-            setTimeout(async () => {
-            }, 10000)
-
-            const postId = ctx.match[1];
-
-            if (!bot.context.tvPostData || !bot.context.tvPostData[postId]) {
-                await ctx.answerCbQuery('❌ Post data not found');
-                return ctx.editMessageText('Unable to find post data. Please create a new post.');
-            }
-
-            const postData = bot.context.tvPostData[postId];
-            const postSetting = await Post.getLatestForAdmin(ctx.from.id);
-
-            // Send post to channel
-            let sentMessage;
-            if (postData.imageUrl) {
-                sentMessage = await ctx.telegram.sendPhoto(postData.channelId, postData.imageUrl, {
-                    caption: postData.post.caption,
-                    parse_mode: 'HTML',
-                    ...postData.post.keyboard
-                });
-            } else {
-                sentMessage = await ctx.telegram.sendMessage(postData.channelId, postData.post.caption, {
-                    parse_mode: 'HTML',
-                    ...postData.post.keyboard
-                });
-            }
-
-            // Send sticker if configured
-            if (postSetting && postSetting.stickerId) {
-                try {
-                    await ctx.telegram.sendSticker(postData.channelId, postSetting.stickerId);
-                } catch (stickerError) {
-                    console.error('Error sending sticker:', stickerError);
-                }
-            }
-
-            // Store message data for dynamic link functionality
-            bot.context.postedTVMessages[postId] = {
-                messageId: sentMessage.message_id,
-                channelId: postData.channelId,
-                seriesData: postData.seriesData,
-                seasonLinks: postData.seasonLinks,
-                imageUrl: postData.imageUrl,
-                adminId: ctx.from.id,
-                createdAt: new Date()
-            };
-
-            const postConfimationMsg = '✅ Post sent to channel!'
-            await ctx.answerCbQuery(postConfimationMsg);
-            const detailedMsg = `✅ Post for "${postData.seriesData.name}" has been sent to ${postData.channelInfo} successfully!\n\n🔗 Use \`/addlink ${postId}\` to add links to buttons.\n🔗 Use \`/updatebtn ${postId}\` to add-update-change links-name of buttons.`
-            await ctx.editMessageText(detailedMsg, { parse_mode: 'Markdown' });
-
-            await logger.command(
-                ctx.from.id,
-                `${ctx.from.first_name} (${ctx.from.username || 'Untitled'})` || 'Unknown',
-                'TV Series post to channel',
-                'SUCCESS',
-                `Posted ${postData.seriesData.name} to channel ${postData.channelInfo}`
-            );
-
-            // Clean up temporary post data but keep posted message data
-            delete bot.context.tvPostData[postId];
-
-        } catch (error) {
-            console.error('Error sending TV series post to channel:', error);
-            await ctx.answerCbQuery('❌ Error sending post');
-            await ctx.editMessageText('Error sending post to channel. Please check bot permissions and try again.');
-
-            await logger.error(
-                ctx.from.id,
-                `${ctx.from.first_name} (${ctx.from.username || 'Untitled'})` || 'Unknown',
-                'TV Series post to channel',
-                'FAILED',
-                error.message
-            );
-        }
-    });
-
-    // Handle post cancellation
-    bot.action(/^tvcancel_(.+)$/, async (ctx) => {
-        try {
-            setTimeout(async () => {
-                await ctx.deleteMessage()
-            }, 10000)
-
-            const postId = ctx.match[1];
-
-            if (bot.context.tvPostData && bot.context.tvPostData[postId]) {
-                delete bot.context.tvPostData[postId];
-            }
-
-            await ctx.answerCbQuery('Post cancelled');
-            await ctx.editMessageText('❌ Post cancelled.');
-
-        } catch (error) {
-            console.error('Error cancelling TV series post:', error);
-            await ctx.answerCbQuery('Error cancelling post');
-            await ctx.editMessageText('Error occurred while cancelling post.');
-        }
-    });
-
     bot.command(['addlink'], isAdmin, async (ctx) => {
         try {
             setTimeout(async () => {
@@ -537,13 +283,13 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
             const postId = parts[0];
             const newLinks = parts.slice(1);
 
-            if (!bot.context.postedTVMessages || !bot.context.postedTVMessages[postId]) {
+            // Get post from database
+            const tvPost = await TVPost.findByPostId(postId);
+            if (!tvPost) {
                 return ctx.reply('❌ Post not found. Please check the post ID.');
             }
 
-            const messageData = bot.context.postedTVMessages[postId];
-
-            if (messageData.adminId !== ctx.from.id) {
+            if (tvPost.adminId !== ctx.from.id) {
                 return ctx.reply('❌ You can only edit posts that you created.');
             }
 
@@ -555,7 +301,7 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
 
                 const [seasonText, newLink] = linkData.split('=').map(item => item.trim());
 
-                const seasonIndex = messageData.seasonLinks.findIndex(originalLink => {
+                const seasonIndex = tvPost.seasonLinks.findIndex(originalLink => {
                     const [originalSeasonText] = originalLink.split('=').map(item => item.trim());
                     return originalSeasonText.toLowerCase() === seasonText.toLowerCase();
                 });
@@ -567,19 +313,19 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 linkUpdates[seasonIndex] = newLink;
             }
 
-            const updatedSeasonLinks = [...messageData.seasonLinks];
+            const updatedSeasonLinks = [...tvPost.seasonLinks];
             for (const [index, newLink] of Object.entries(linkUpdates)) {
                 const [seasonText] = updatedSeasonLinks[index].split('=').map(item => item.trim());
                 updatedSeasonLinks[index] = `${seasonText} = ${newLink}`;
             }
 
-            const updatedPost = createTVSeriesPost(messageData.seriesData, updatedSeasonLinks, postId);
+            const updatedPost = createTVSeriesPost(tvPost.seriesData, updatedSeasonLinks, postId);
 
             try {
-                if (messageData.imageUrl) {
+                if (tvPost.imageUrl) {
                     await ctx.telegram.editMessageCaption(
-                        messageData.channelId,
-                        messageData.messageId,
+                        tvPost.channelId,
+                        tvPost.messageId,
                         undefined,
                         updatedPost.caption,
                         {
@@ -589,8 +335,8 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                     );
                 } else {
                     await ctx.telegram.editMessageText(
-                        messageData.channelId,
-                        messageData.messageId,
+                        tvPost.channelId,
+                        tvPost.messageId,
                         undefined,
                         updatedPost.caption,
                         {
@@ -600,7 +346,8 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                     );
                 }
 
-                messageData.seasonLinks = updatedSeasonLinks;
+                // Update database
+                await TVPost.updateSeasonLinks(postId, updatedSeasonLinks);
 
                 await ctx.reply('✅ Links updated successfully in the channel post!');
 
@@ -645,13 +392,8 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 await ctx.deleteMessage()
             }, 5000);
 
-            if (!bot.context.postedTVMessages) {
-                return ctx.reply('❌ No posts found.');
-            }
-
-            const userPosts = Object.entries(bot.context.postedTVMessages)
-                .filter(([postId, data]) => data.adminId === ctx.from.id)
-                .slice(-10); // Show last 10 posts
+            // Get posts from database
+            const userPosts = await TVPost.findByAdminId(ctx.from.id, 10);
 
             if (userPosts.length === 0) {
                 return ctx.reply('❌ No posts found for your account.');
@@ -659,12 +401,12 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
 
             let message = '📋 **Your Recent TV Posts:**\n\n';
 
-            userPosts.forEach(([postId, data]) => {
-                const date = new Date(data.createdAt).toLocaleDateString();
-                message += `🆔 \`${postId}\`\n`;
-                message += `📺 **${data.seriesData.name}**\n`;
+            userPosts.forEach((post) => {
+                const date = post.createdAt.toLocaleDateString();
+                message += `🆔 \`${post.postId}\`\n`;
+                message += `📺 **${post.seriesName}**\n`;
                 message += `📅 ${date}\n`;
-                message += `📍 Channel: ${data.channelId}\n\n`;
+                message += `📍 Channel: ${post.channelId}\n\n`;
             });
 
             message += '\n💡 Use `/addlink POST_ID | Season X = newlink` to update links';
@@ -707,20 +449,20 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
 
             const postId = commandText;
 
-            if (!bot.context.postedTVMessages || !bot.context.postedTVMessages[postId]) {
+            // Get post from database
+            const tvPost = await TVPost.findByPostId(postId);
+            if (!tvPost) {
                 return ctx.reply('❌ Post not found. Please check the post ID.');
             }
 
-            const messageData = bot.context.postedTVMessages[postId];
-
-            if (messageData.adminId !== ctx.from.id) {
+            if (tvPost.adminId !== ctx.from.id) {
                 return ctx.reply('❌ You can only edit posts that you created.');
             }
 
-            const post = createTVSeriesPost(messageData.seriesData, messageData.seasonLinks, postId);
+            const post = createTVSeriesPost(tvPost.seriesData, tvPost.seasonLinks, postId);
             const buttons = [];
 
-            messageData.seasonLinks.forEach((seasonLink, index) => {
+            tvPost.seasonLinks.forEach((seasonLink, index) => {
                 const [buttonText] = seasonLink.trim().split('=').map(item => item.trim());
                 buttons.push([Markup.button.callback(`📝 ${buttonText}`, `editbtn_${postId}_${index}`)]);
             });
@@ -729,7 +471,7 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
             buttons.push([Markup.button.callback('❌ Cancel', `cancelbtn_${postId}`)]);
 
             await ctx.reply(
-                `🔧 **Update Buttons for "${messageData.seriesData.name}"**\n\nSelect a button to edit or add a new one:`,
+                `🔧 **Update Buttons for "${tvPost.seriesName}"**\n\nSelect a button to edit or add a new one:`,
                 {
                     parse_mode: 'Markdown',
                     ...Markup.inlineKeyboard(buttons)
@@ -763,12 +505,12 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
             const postId = ctx.match[1];
             const buttonIndex = parseInt(ctx.match[2]);
 
-            if (!bot.context.postedTVMessages || !bot.context.postedTVMessages[postId]) {
+            const tvPost = await TVPost.findByPostId(postId);
+            if (!tvPost) {
                 return ctx.answerCbQuery('❌ Post not found');
             }
 
-            const messageData = bot.context.postedTVMessages[postId];
-            const [currentButtonText, currentLink] = messageData.seasonLinks[buttonIndex].split('=').map(item => item.trim());
+            const [currentButtonText, currentLink] = tvPost.seasonLinks[buttonIndex].split('=').map(item => item.trim());
 
             const contextId = `editbtn_${postId}_${buttonIndex}_${Date.now()}`;
             bot.context.buttonEditContext = bot.context.buttonEditContext || {};
@@ -799,8 +541,8 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
     bot.action(/^addbtn_(.+)$/, async (ctx) => {
         try {
             const postId = ctx.match[1];
-
-            if (!bot.context.postedTVMessages || !bot.context.postedTVMessages[postId]) {
+            const tvPost = await TVPost.findByPostId(postId);
+            if (!tvPost) {
                 return ctx.answerCbQuery('❌ Post not found');
             }
 
@@ -989,7 +731,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
     bot.action(/^tvconfirm_(.+)$/, async (ctx) => {
         try {
             setTimeout(async () => {
-                await ctx.deleteMessage()
             }, 10000)
 
             const postId = ctx.match[1];
@@ -1024,19 +765,26 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                 }
             }
 
-            bot.context.postedTVMessages[postId] = {
-                messageId: sentMessage.message_id,
-                channelId: postData.channelId,
-                seriesData: postData.seriesData,
-                seasonLinks: postData.seasonLinks,
-                imageUrl: postData.imageUrl,
-                adminId: ctx.from.id,
-                createdAt: new Date()
-            };
+            try {
+                await TVPost.createTVPost({
+                    postId,
+                    adminId: ctx.from.id,
+                    seriesName: postData.seriesData.name,
+                    seriesId: postData.seriesData.id,
+                    channelId: postData.channelId,
+                    channelUsername: postSetting.channelUsername || null,
+                    messageId: sentMessage.message_id,
+                    seasonLinks: postData.seasonLinks,
+                    seriesData: postData.seriesData,
+                    imageUrl: postData.imageUrl
+                });
+            } catch (dbError) {
+                console.error('Error saving TV post to database:', dbError);
+            }
 
             const postConfimationMsg = '✅ Post sent to channel!'
             await ctx.answerCbQuery(postConfimationMsg);
-            const detailedMsg = `✅ Post for "${postData.seriesData.name}" has been sent to ${postData.channelInfo} successfully!\n\n🔗 Use \`/addlink ${postId}\` to add links to buttons dynamically.`
+            const detailedMsg = `✅ Post for "${postData.seriesData.name}" has been sent to ${postData.channelInfo} successfully!\n\n🔗 Use \`/addlink ${postId}\` to add links to buttons.\n🔗 Use \`/updatebtn ${postId}\` to add-update-change links-name of buttons.`
             await ctx.editMessageText(detailedMsg, { parse_mode: 'Markdown' });
 
             await logger.command(
@@ -1063,6 +811,29 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
             );
         }
     });
+
+    bot.action(/^tvcancel_(.+)$/, async (ctx) => {
+        try {
+            setTimeout(async () => {
+                await ctx.deleteMessage()
+            }, 10000)
+
+            const postId = ctx.match[1];
+
+            if (bot.context.tvPostData && bot.context.tvPostData[postId]) {
+                delete bot.context.tvPostData[postId];
+            }
+
+            await ctx.answerCbQuery('Post cancelled');
+            await ctx.editMessageText('❌ Post cancelled.');
+
+        } catch (error) {
+            console.error('Error cancelling TV series post:', error);
+            await ctx.answerCbQuery('Error cancelling post');
+            await ctx.editMessageText('Error occurred while cancelling post.');
+        }
+    });
+
 
     bot.on('text', async (ctx, next) => {
         try {
@@ -1107,21 +878,27 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
 
                 contextData.newButtonLink = messageText;
 
-                const messageData = bot.context.postedTVMessages[contextData.postId];
-
-                if (contextData.isNewButton) {
-                    messageData.seasonLinks.push(`${contextData.newButtonName} = ${contextData.newButtonLink}`);
-                } else {
-                    messageData.seasonLinks[contextData.buttonIndex] = `${contextData.newButtonName} = ${contextData.newButtonLink}`;
+                // Get post from database
+                const tvPost = await TVPost.findByPostId(contextData.postId);
+                if (!tvPost) {
+                    return ctx.reply('❌ Post not found in database.');
                 }
 
-                const updatedPost = createTVSeriesPost(messageData.seriesData, messageData.seasonLinks, contextData.postId);
+                const updatedSeasonLinks = [...tvPost.seasonLinks];
+
+                if (contextData.isNewButton) {
+                    updatedSeasonLinks.push(`${contextData.newButtonName} = ${contextData.newButtonLink}`);
+                } else {
+                    updatedSeasonLinks[contextData.buttonIndex] = `${contextData.newButtonName} = ${contextData.newButtonLink}`;
+                }
+
+                const updatedPost = createTVSeriesPost(tvPost.seriesData, updatedSeasonLinks, contextData.postId);
 
                 try {
-                    if (messageData.imageUrl) {
+                    if (tvPost.imageUrl) {
                         await ctx.telegram.editMessageCaption(
-                            messageData.channelId,
-                            messageData.messageId,
+                            tvPost.channelId,
+                            tvPost.messageId,
                             undefined,
                             updatedPost.caption,
                             {
@@ -1131,8 +908,8 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                         );
                     } else {
                         await ctx.telegram.editMessageText(
-                            messageData.channelId,
-                            messageData.messageId,
+                            tvPost.channelId,
+                            tvPost.messageId,
                             undefined,
                             updatedPost.caption,
                             {
@@ -1141,6 +918,9 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
                             }
                         );
                     }
+
+                    // Update database
+                    await TVPost.updateSeasonLinks(contextData.postId, updatedSeasonLinks);
 
                     const actionType = contextData.isNewButton ? 'added' : 'updated';
                     await ctx.reply(`✅ Button "${contextData.newButtonName}" ${actionType} successfully in the channel post!`);
@@ -1193,28 +973,6 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
         }
     }, 300000);
 
-    bot.action(/^tvcancel_(.+)$/, async (ctx) => {
-        try {
-            setTimeout(async () => {
-                await ctx.deleteMessage()
-            }, 10000)
-
-            const postId = ctx.match[1];
-
-            if (bot.context.tvPostData && bot.context.tvPostData[postId]) {
-                delete bot.context.tvPostData[postId];
-            }
-
-            await ctx.answerCbQuery('Post cancelled');
-            await ctx.editMessageText('❌ Post cancelled.');
-
-        } catch (error) {
-            console.error('Error cancelling TV series post:', error);
-            await ctx.answerCbQuery('Error cancelling post');
-            await ctx.editMessageText('Error occurred while cancelling post.');
-        }
-    });
-
     setInterval(() => {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -1263,5 +1021,12 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
     bot.context.buttonEditContext = bot.context.buttonEditContext || {};
 
 };
+setInterval(async () => {
+    try {
+        await TVPost.cleanupOldPosts();
+    } catch (error) {
+        console.error('Error cleaning up old TV posts:', error);
+    }
+}, 24 * 60 * 60 * 1000);
 
 module.exports = setupTVPostCommand;
