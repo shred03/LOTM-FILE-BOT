@@ -77,12 +77,13 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
         }
         const formattedRuntime = formatRuntime(episodeRuntime);
 
-        const caption = `<b>${seriesData.name} ${firstAirYear}</b> - 𝗦𝟬<b>${numberOfSeasons}</b>
+        const caption = `𝗡𝗮𝗺𝗲: <b>${seriesData.name} (${firstAirYear})</b>
+𝗦𝗲𝗮𝘀𝗼𝗻: ${numberOfSeasons}
 𝗘𝗽𝗶𝘀𝗼𝗱𝗲: ${episodeCounts}
 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: ${formattedRuntime}
 𝗔𝘂𝗱𝗶𝗼: Japanese (𝗘𝗦𝘂𝗯) 
     
-<blockquote><b>@Espada_Org</b></blockquote>`;
+𝗝𝗼𝗶𝗻: <b>@Espada_Org</b>`;
 
         // Create buttons from season links
         const buttons = seasonLinks.map((seasonLink, index) => {
