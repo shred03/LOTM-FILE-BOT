@@ -66,7 +66,7 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
         const episodeCounts = seriesData.seasons.map(season => season.episode_count).join("/");
 
         function formatRuntime(minutes) {
-            if (!minutes || isNaN(minutes)) return "NA";
+            if (!minutes || isNaN(minutes)) return "𝟮𝟰-𝗺𝗶𝗻";
 
             const hours = Math.floor(minutes / 60);
             const remainingMinutes = minutes % 60;
@@ -77,19 +77,12 @@ const setupTVPostCommand = (bot, logger, ADMIN_IDS) => {
         }
         const formattedRuntime = formatRuntime(episodeRuntime);
 
-        const caption = `<b>${seriesData.name} (${firstAirYear})</b>
-╭──────────────────────
-➺𝑨𝒖𝒅𝒊𝒐: Jap-Eng (ESub)
-➺𝑸𝒖𝒂𝒍𝒊𝒕𝒚: 480p-720p-1080p
-├──────────────────────
-➺𝑫𝒖𝒓𝒂𝒕𝒊𝒐𝒏: ${formattedRuntime}
-➺𝑺𝒆𝒂𝒔𝒐𝒏: ${numberOfSeasons}
-├──────────────────────
-➺𝑬𝒑𝒊𝒔𝒐𝒅𝒆: ${episodeCounts}
-➺𝑮𝒆𝒏𝒓𝒆𝒔: ${genres}
-╰──────────────────────
+        const caption = `<b>${seriesData.name} ${firstAirYear}</b> - 𝗦𝟬<b>${numberOfSeasons}</b>
+𝗘𝗽𝗶𝘀𝗼𝗱𝗲: ${episodeCounts}
+𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: ${formattedRuntime}
+𝗔𝘂𝗱𝗶𝗼: Japanese (𝗘𝗦𝘂𝗯) 
     
-<blockquote><b>𝑷𝒐𝒘𝒆𝒓𝒆𝒅 𝑩𝒚<i>: @lord_of_the_mysteries_channel</i></b></blockquote>`;
+<blockquote><b>@Espada_Org</b></blockquote>`;
 
         // Create buttons from season links
         const buttons = seasonLinks.map((seasonLink, index) => {
